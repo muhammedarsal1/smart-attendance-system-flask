@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Log Attendance</h2>
+
+{% if message %}
+<div class="status-banner">{{ message }}</div>
+{% endif %}
+{% if error %}
+<div class="error-banner">{{ error }}</div>
+{% endif %}
+
+<h3>Today's Attendance Summary ({{ 'now' | datetimeformat('%Y-%m-%d') }})</h3>
+{% if todays_summary %}
+<table>
+    <thead>
+        <tr>
+            <th>Employee Name</th>
+            <th>Events</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for employee_name, events in todays_summary.items() %}
+        <tr>
+            <td>{{ employee_name }}</td>
+            <td>
+                {% for event in events %}
+                {{ event.status }}: {{ event.time }}<br>
+                {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No attendance records for today.</p>
+{% endif %}
+
+<h3>Start Face Recognition</h3>
+<form method="POST">
+    <button type="submit" name="recognize">Start Recognition</button>
+</form>
+
+<h3>Edit Today's Attendance</h3>
+<form method="POST">
+    <label for="employee_name">Select Employee:</label>
+    <select id="employee_name" name="employee_name">
+        <option value="">-- Select an Employee --</option>
+        {% for emp in employees %}
+        <option value="{{ emp }}" {% if selected_employee == emp %}selected{% endif %}>{{ emp }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" name="select_employee">Load Logs</button>
+</form>
+
+{% if selected_employee and employee_logs %}
+<h4>Editing Logs for {{ selected_employee }}</h4>
+<form method="POST">
+    <input type="hidden" name="employee_name" value="{{ selected_employee }}">
+    <table>
+        <thead>
+            <tr>
+                <th>Log ID</th>
+                <th>Status</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in employee_logs %}
+            <tr>
+                <td><input type="hidden" name="log_id_{{ log['log_id'] }}" value="{{ log['log_id'] }}">{{ log['log_id'] }}</td>
+                <td>
+                    <select name="status_{{ log['log_id'] }}">
+                        <option value="IN" {% if log['status'] == 'IN' %}selected{% endif %}>IN</option>
+                        <option value="BREAK_START" {% if log['status'] == 'BREAK_START' %}selected{% endif %}>BREAK_START</option>
+                        <option value="BREAK_END" {% if log['status'] == 'BREAK_END' %}selected{% endif %}>BREAK_END</option>
+                        <option value="OUT" {% if log['status'] == 'OUT' %}selected{% endif %}>OUT</option>
+                    </select>
+                </td>
+                <td><input type="datetime-local" name="timestamp_{{ log['log_id'] }}" value="{{ log['timestamp'] | datetimeformat('%Y-%m-%dT%H:%M') if log['timestamp'] else '' }}" required></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <button type="submit" name="update_logs">Update Logs</button>
+</form>
+
+<h4>Add New Break for {{ selected_employee }}</h4>
+<form method="POST">
+    <input type="hidden" name="employee_name" value="{{ selected_employee }}">
+    <label for="new_break_start">New Break Start (HH:MM):</label>
+    <input type="text" id="new_break_start" name="new_break_start" placeholder="e.g., 12:00">
+    <br><br>
+    <label for="new_break_end">New Break End (HH:MM):</label>
+    <input type="text" id="new_break_end" name="new_break_end" placeholder="e.g., 13:00">
+    <br><br>
+    <button type="submit" name="add_break">Add Break</button>
+</form>
+{% elif selected_employee %}
+<p>No logs found for {{ selected_employee }} today.</p>
+{% endif %}
+{% endblock %}

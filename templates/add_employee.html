@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Add Employee</h2>
+
+<h3>Existing Employees</h3>
+<ul>
+    {% for emp in employees %}
+    <li>{{ emp }}</li>
+    {% endfor %}
+</ul>
+
+<h3>Add New Employee</h3>
+<form method="POST">
+    <label for="new_employee">Employee Name:</label>
+    <input type="text" id="new_employee" name="new_employee" required>
+    <button type="submit">Add Employee</button>
+</form>
+
+{% if employee_name %}
+<h3>Capture Images for {{ employee_name }}</h3>
+<p><strong>Note:</strong> You must capture at least 30 images for better training. Currently captured: {{ total_captured }}.</p>
+
+<div>
+    <h4>Select Angle</h4>
+    <button onclick="selectAngle('front')">Front</button>
+    <button onclick="selectAngle('right')">Right</button>
+    <button onclick="selectAngle('left')">Left</button>
+    <p>Selected Angle: <span id="selected_angle">{{ selected_angle or 'None' }}</span></p>
+</div>
+
+<div>
+    <h4>Capture Image</h4>
+    <button onclick="captureImage()">Capture Image</button>
+    <p>Front: {{ captured_counts['front'] }} | Right: {{ captured_counts['right'] }} | Left: {{ captured_counts['left'] }}</p>
+    <p>Total Captured: {{ total_captured }}</p>
+</div>
+
+<div>
+    <h4>Automatic Capture</h4>
+    <button onclick="captureAutomatically('front')" {% if capturing['front'] %}disabled{% endif %}>
+        {{ 'Stop Front Capture' if capturing['front'] else 'Start Front Capture' }}
+    </button>
+    <button onclick="captureAutomatically('right')" {% if capturing['right'] %}disabled{% endif %}>
+        {{ 'Stop Right Capture' if capturing['right'] else 'Start Right Capture' }}
+    </button>
+    <button onclick="captureAutomatically('left')" {% if capturing['left'] %}disabled{% endif %}>
+        {{ 'Stop Left Capture' if capturing['left'] else 'Start Left Capture' }}
+    </button>
+</div>
+
+<div>
+    <h4>Captured Images</h4>
+    {% if captured_images and not request.form.get('self_train') %}
+    <div style="display: flex; flex-wrap: wrap;">
+        {% for img in captured_images %}
+        <img src="{{ url_for('serve_face_data', filename=employee_name + '/' + img) }}" alt="Captured Image" style="width: 100px; height: 100px; margin: 5px;">
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>No images captured yet or training completed.</p>
+    {% endif %}
+</div>
+
+<div>
+    <h4>Self-Train Model</h4>
+    <form method="POST" id="trainForm">
+        <input type="hidden" name="action" value="train">
+        <button type="submit" id="self_train_btn" {% if not can_train %}disabled{% endif %} onclick="startTrainingAnimation(event)">Self-Train Model</button>
+    </form>
+    <div id="loading-bar-container" style="display: none; margin-top: 10px;">
+        <p>Training in Progress: <span id="training-percentage">0%</span></p>
+        <div style="width: 100%; background-color: #ddd;">
+            <div id="loading-bar" style="width: 0%; height: 20px; background-color: #0de0e0; transition: width 0.1s;"></div>
+        </div>
+    </div>
+    <p id="train-status" style="color: red;"></p> <!-- Debug status -->
+</div>
+{% endif %}
+
+{% if message %}
+<div class="status-banner">{{ message }}</div>
+{% endif %}
+{% if error %}
+<div class="error-banner">{{ error }}</div>
+{% endif %}
+
+<script>
+    function selectAngle(angle) {
+        fetch(`/select_angle/${angle}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('selected_angle').innerText = angle.charAt(0).toUpperCase() + angle.slice(1);
+            alert(data.message);
+        })
+        .catch(error => {
+            console.error('Error selecting angle:', error);
+            alert('Failed to select angle.');
+        });
+    }
+
+    function captureImage() {
+        fetch('/capture_image', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            updateCaptureStatus();
+        })
+        .catch(error => {
+            console.error('Error capturing image:', error);
+            alert('Failed to capture image.');
+        });
+    }
+
+    function captureAutomatically(angle) {
+        fetch(`/capture_images_automatically/${angle}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            updateCaptureStatus();
+        })
+        .catch(error => {
+            console.error('Error during automatic capture:', error);
+            alert('Failed to capture images automatically.');
+        });
+    }
+
+    function updateCaptureStatus() {
+        fetch('/get_capture_status')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('selected_angle').innerText = data.selected_angle ? data.selected_angle.charAt(0).toUpperCase() + data.selected_angle.slice(1) : 'None';
+            // Update captured counts dynamically
+            document.querySelector('p:nth-child(2)').innerText = `Front: ${data.captured_counts.front} | Right: ${data.captured_counts.right} | Left: ${data.captured_counts.left}`;
+            document.querySelector('p:nth-child(3)').innerText = `Total Captured: ${data.total_captured}`;
+            // Enable/disable train button based on can_train logic (simplified here)
+            const selfTrainBtn = document.getElementById('self_train_btn');
+            selfTrainBtn.disabled = data.total_captured < 30;
+        })
+        .catch(error => {
+            console.error('Error updating capture status:', error);
+        });
+    }
+
+    function startTrainingAnimation(event) {
+        event.preventDefault(); // Prevent default form submission
+        const loadingBarContainer = document.getElementById('loading-bar-container');
+        const loadingBar = document.getElementById('loading-bar');
+        const percentageText = document.getElementById('training-percentage');
+        const selfTrainBtn = document.getElementById('self_train_btn');
+        const statusDiv = document.getElementById('train-status');
+
+        selfTrainBtn.disabled = true;
+        loadingBarContainer.style.display = 'block';
+        statusDiv.innerText = 'Starting training...';
+
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 1;
+            loadingBar.style.width = progress + '%';
+            percentageText.innerText = progress + '%';
+
+            if (progress >= 100) {
+                clearInterval(interval);
+                fetch('/add_employee', {
+                    method: 'POST',
+                    body: new FormData(document.getElementById('trainForm'))
+                })
+                .then(response => response.json())
+                .then(data => {
+                    selfTrainBtn.disabled = false;
+                    loadingBarContainer.style.display = 'none';
+                    if (data.error) {
+                        statusDiv.innerText = data.error;
+                        statusDiv.style.color = 'red';
+                    } else if (data.message) {
+                        statusDiv.innerText = data.message;
+                        statusDiv.style.color = 'green';
+                        // Clear the employee session data and reload
+                        document.getElementById('new_employee').value = '';
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    statusDiv.innerText = 'Error during training.';
+                    statusDiv.style.color = 'red';
+                    selfTrainBtn.disabled = false;
+                    loadingBarContainer.style.display = 'none';
+                });
+            }
+        }, 50);
+    }
+</script>
+{% endblock %}

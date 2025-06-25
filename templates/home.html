@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hero-section">
+    <h1 class="hero-title">
+        <span class="typing">Welcome to Smart Attendance System</span>
+    </h1>
+    <p class="hero-subtitle">Streamline attendance tracking with advanced facial recognition.</p>
+</div>
+
+<div class="clock-container">
+    <div class="clock">
+        <div class="clock-face">
+            <div class="hand hour-hand"></div>
+            <div class="hand minute-hand"></div>
+            <div class="hand second-hand"></div>
+            <div class="center-dot"></div>
+            <!-- Clock Numbers -->
+            <div class="number number-12">12</div>
+            <div class="number number-3">3</div>
+            <div class="number number-6">6</div>
+            <div class="number number-9">9</div>
+        </div>
+    </div>
+    <div class="date-display">
+        <p>Date: <span id="current-date">{{ 'now' | datetimeformat('%Y-%m-%d') }}</span></p>
+        <p>Time: <span id="current-time">{{ 'now' | datetimeformat('%H:%M:%S') }}</span></p>
+    </div>
+</div>
+
+<div class="container">
+    <h2>Explore the System</h2>
+    <div class="nav-cards">
+        <a href="{{ url_for('add_employee') }}" class="card">
+            <div class="card-content">
+                <h3>Add a New Employee</h3>
+                <p>Capture employee images and train the model for recognition.</p>
+            </div>
+        </a>
+        <a href="{{ url_for('log_attendance') }}" class="card">
+            <div class="card-content">
+                <h3>Log or Edit Attendance</h3>
+                <p>Track employee attendance with real-time logging.</p>
+            </div>
+        </a>
+        <a href="{{ url_for('admin_panel') }}" class="card">
+            <div class="card-content">
+                <h3>Admin Panel</h3>
+                <p>Manage employees, view logs, and generate reports.</p>
+            </div>
+        </a>
+    </div>
+</div>
+
+<style>
+/* Hero Section */
+.hero-section {
+    text-align: center;
+    padding: 100px 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.hero-title {
+    font-size: 48px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.typing {
+    display: inline-block;
+    overflow: hidden;
+    white-space: nowrap;
+    border-right: 4px solid #3498db;
+    animation: typewriter 3s steps(40, end), blinkTextCursor 0.75s step-end infinite;
+}
+
+@keyframes typewriter {
+    from { width: 0; }
+    to { width: 100%; }
+}
+
+@keyframes blinkTextCursor {
+    from, to { border-right-color: transparent; }
+    50% { border-right-color: #3498db; }
+}
+
+.hero-subtitle {
+    font-size: 20px;
+    font-weight: 400;
+    opacity: 0.9;
+    margin-bottom: 30px;
+    animation: fadeIn 2s ease-in-out;
+}
+
+.cta-button {
+    display: inline-block;
+    background: linear-gradient(90deg, #3498db, #2980b9);
+    padding: 15px 30px;
+    font-size: 18px;
+    font-weight: 600;
+    border-radius: 30px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    color: white;
+    text-decoration: none;
+}
+
+.cta-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Clock Container */
+.clock-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px auto;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    animation: fadeIn 1.5s ease-in;
+    max-width: 400px;
+}
+
+.clock {
+    position: relative;
+    width: 250px;
+    height: 250px;
+    background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+    border-radius: 50%;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3), inset 0 0 10px rgba(0, 0, 0, 0.2);
+    border: 10px solid #2c3e50;
+}
+
+.clock-face {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.hand {
+    position: absolute;
+    bottom: 50%;
+    left: 50%;
+    transform-origin: bottom;
+    border-radius: 5px;
+}
+
+.hour-hand {
+    width: 6px;
+    height: 60px;
+    background: #2c3e50;
+}
+
+.minute-hand {
+    width: 4px;
+    height: 80px;
+    background: #3498db;
+}
+
+.second-hand {
+    width: 2px;
+    height: 90px;
+    background: #e74c3c;
+}
+
+.center-dot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #2c3e50;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.number {
+    position: absolute;
+    font-size: 18px;
+    font-weight: 600;
+    color: #2c3e50;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.number-12 { top: 10px; left: 50%; transform: translateX(-50%); }
+.number-3 { right: 10px; top: 50%; transform: translateY(-50%); }
+.number-6 { bottom: 10px; left: 50%; transform: translateX(-50%); }
+.number-9 { left: 10px; top: 50%; transform: translateY(-50%); }
+
+.date-display {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.date-display p {
+    font-size: 18px;
+    font-weight: 500;
+    margin: 5px 0;
+}
+
+#current-date, #current-time {
+    color: #3498db;
+    font-weight: 600;
+}
+
+/* Navigation Cards */
+.nav-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.95);
+    width: 300px;
+    border-radius: 15px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    animation: slideIn 0.8s ease-in-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.2), rgba(41, 128, 185, 0.2));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.card:hover::before {
+    opacity: 1;
+}
+
+.card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.card-content {
+    padding: 25px;
+    text-align: center;
+}
+
+.card h3 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.card p {
+    color: #666;
+    font-size: 14px;
+    font-weight: 400;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+</style>
+
+<script>
+// Live Clock Update for IST
+function updateClock() {
+    const now = new Date();
+    const options = { timeZone: 'Asia/Kolkata' };
+    const date = now.toLocaleDateString('en-IN', options);
+    const time = now.toLocaleTimeString('en-IN', options);
+
+    // Update digital display
+    document.getElementById('current-date').textContent = date;
+    document.getElementById('current-time').textContent = time;
+
+    // Update analog clock hands
+    const hours = now.getHours() % 12;
+    const minutes = now.getMinutes();
+    const seconds = now.getSeconds();
+
+    const hourDeg = (hours * 30) + (minutes * 0.5); // 30 degrees per hour + 0.5 degrees per minute
+    const minuteDeg = minutes * 6; // 6 degrees per minute
+    const secondDeg = seconds * 6; // 6 degrees per second
+
+    document.querySelector('.hour-hand').style.transform = `rotate(${hourDeg}deg)`;
+    document.querySelector('.minute-hand').style.transform = `rotate(${minuteDeg}deg)`;
+    document.querySelector('.second-hand').style.transform = `rotate(${secondDeg}deg)`;
+}
+
+// Initial call and update every second
+updateClock();
+setInterval(updateClock, 1000);
+</script>
+{% endblock %}

@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Admin Panel</h2>
+
+{% if not authorized %}
+<h3>Enter Admin Password</h3>
+<form method="POST">
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required>
+    <button type="submit">Login</button>
+</form>
+{% if error %}
+<div class="error-banner">{{ error }}</div>
+{% endif %}
+{% else %}
+
+{% if message %}
+<div class="status-banner">{{ message }}</div>
+{% endif %}
+{% if error %}
+<div class="error-banner">{{ error }}</div>
+{% endif %}
+
+<h3>Delete Employee</h3>
+<form method="POST">
+    <label for="delete_employee">Select Employee to Delete:</label>
+    <select id="delete_employee" name="delete_employee">
+        <option value="">-- Select an Employee --</option>
+        {% for emp in employees %}
+        <option value="{{ emp }}">{{ emp }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" name="delete_employee_btn">Delete Employee</button>
+</form>
+
+<h3>Filter Attendance Logs</h3>
+<form method="POST">
+    <label for="selected_date">Select Date:</label>
+    <input type="date" id="selected_date" name="selected_date" value="{{ selected_date }}">
+
+    <label for="selected_employee">Select Employee:</label>
+    <select id="selected_employee" name="selected_employee">
+        <option value="all" {% if not selected_employee %}selected{% endif %}>All Employees</option>
+        {% for emp in employees %}
+        <option value="{{ emp }}" {% if selected_employee == emp %}selected{% endif %}>{{ emp }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit" name="filter_logs">Filter Logs</button>
+</form>
+
+<h3>Attendance Logs</h3>
+{% if logs %}
+<form method="POST">
+    <table>
+        <thead>
+            <tr>
+                <th>Log ID</th>
+                <th>Employee Name</th>
+                <th>Status</th>
+                <th>Timestamp</th>
+                <th>Break Exceeded</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td><input type="hidden" name="log_id_{{ log['log_id'] }}" value="{{ log['log_id'] }}">{{ log['log_id'] }}</td>
+                <td>{{ log['name'] }}</td>
+                <td>
+                    <select name="status_{{ log['log_id'] }}">
+                        <option value="IN" {% if log['status'] == 'IN' %}selected{% endif %}>IN</option>
+                        <option value="BREAK_START" {% if log['status'] == 'BREAK_START' %}selected{% endif %}>BREAK_START</option>
+                        <option value="BREAK_END" {% if log['status'] == 'BREAK_END' %}selected{% endif %}>BREAK_END</option>
+                        <option value="OUT" {% if log['status'] == 'OUT' %}selected{% endif %}>OUT</option>
+                    </select>
+                </td>
+                <td><input type="datetime-local" name="timestamp_{{ log['log_id'] }}" value="{{ log['timestamp'] | datetimeformat('%Y-%m-%dT%H:%M') }}" required></td>
+                <td>{{ 'Yes' if log['is_break_exceeded'] else 'No' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <button type="submit" name="update_logs">Update Logs</button>
+</form>
+{% else %}
+<p>No logs found.</p>
+{% endif %}
+
+<h3>Attendance Summary for {{ selected_date }}</h3>
+{% if date_summary %}
+<table>
+    <thead>
+        <tr>
+            <th>Employee Name</th>
+            <th>In Time</th>
+            <th>Break Start</th>
+            <th>Break End</th>
+            <th>Out Time</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for employee_name, times in date_summary.items() %}
+        <tr>
+            <td>{{ employee_name }}</td>
+            <td>{{ times['IN'] | join(', ') or 'N/A' }}</td>
+            <td>{{ times['BREAK_START'] | join(', ') or 'N/A' }}</td>
+            <td>{{ times['BREAK_END'] | join(', ') or 'N/A' }}</td>
+            <td>{{ times['OUT'] | join(', ') or 'N/A' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No attendance records for {{ selected_date }}.</p>
+{% endif %}
+
+<h3>Visualizations</h3>
+{% if summary_fig %}
+<div>{{ summary_fig | safe }}</div>
+{% endif %}
+
+{% if summary_chart %}
+<div>
+    <canvas id="summaryChart"></canvas>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const ctx = document.getElementById('summaryChart').getContext('2d');
+            new Chart(ctx, {{ summary_chart | tojson | safe }});
+        });
+    </script>
+</div>
+{% endif %}
+
+{% if metrics_fig %}
+<div>{{ metrics_fig | safe }}</div>
+{% endif %}
+
+<h3>Attendance Timeline</h3>
+<form method="POST">
+    <label for="timeline_employee">Select Employee for Timeline:</label>
+    <select id="timeline_employee" name="timeline_employee">
+        {% for emp in employees %}
+        <option value="{{ emp }}" {% if timeline_employee == emp %}selected{% endif %}>{{ emp }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Show Timeline</button>
+</form>
+{% if timeline_fig %}
+<div>{{ timeline_fig | safe }}</div>
+{% endif %}
+
+<h3>Download Logs</h3>
+<a href="{{ url_for('download_logs') }}" download>Download Attendance Logs as CSV</a>
+
+{% endif %}
+{% endblock %}

@@ -1,0 +1,15 @@
+mysql -u root -p
+
+
+USE smart_attendance;
+DESCRIBE employees;
+DESCRIBE attendance_log;
+SELECT * FROM employees;
+
+mysql -u admin -p
+
+
+USE smart_attendance;
+SELECT * FROM employees;
+
+ select * from attendance_log;
