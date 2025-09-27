@@ -92,11 +92,11 @@ cd smart-attendance-system
 # Start the application
 `python app.py`
 
-###🧾 .env Format
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_mysql_password
-DB_NAME=attendance_db
+###🧾 .env Format(Use Your Formats)
+DB_HOST=localhost(Your Host)
+DB_USER=root(Your User)
+DB_PASSWORD=your_mysql_password(Your SQL Password)
+DB_NAME=attendance_db(Your Data Base)
 
 ###💡 How It Works
 
